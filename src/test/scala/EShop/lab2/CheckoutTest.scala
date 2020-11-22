@@ -1,6 +1,12 @@
 package EShop.lab2
 
-import EShop.lab2.Checkout.{CancelCheckout, ConfirmPaymentReceived, SelectDeliveryMethod, SelectPayment, StartCheckout}
+import EShop.lab2.Checkout.{
+  CancelCheckout,
+  ConfirmPaymentReceived,
+  SelectDeliveryMethod,
+  SelectPayment,
+  StartCheckout
+}
 import akka.actor.{ActorSystem, Cancellable, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.BeforeAndAfterAll
@@ -9,13 +15,13 @@ import org.scalatest.flatspec.AnyFlatSpecLike
 import scala.concurrent.duration.{FiniteDuration, _}
 
 class CheckoutTest
-  extends TestKit(ActorSystem("CheckoutTest"))
-  with AnyFlatSpecLike
-  with ImplicitSender
-  with BeforeAndAfterAll {
+    extends TestKit(ActorSystem("CheckoutTest"))
+    with AnyFlatSpecLike
+    with ImplicitSender
+    with BeforeAndAfterAll {
 
   val deliveryMethod = "post"
-  val paymentMethod  = "paypal"
+  val paymentMethod = "paypal"
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
@@ -161,12 +167,12 @@ class CheckoutTest
 
 object CheckoutTest {
 
-  val emptyMsg                  = "empty"
-  val selectingDeliveryMsg      = "selectingDelivery"
+  val emptyMsg = "empty"
+  val selectingDeliveryMsg = "selectingDelivery"
   val selectingPaymentMethodMsg = "selectingPaymentMethod"
-  val processingPaymentMsg      = "processingPayment"
-  val cancelledMsg              = "cancelled"
-  val closedMsg                 = "closed"
+  val processingPaymentMsg = "processingPayment"
+  val cancelledMsg = "cancelled"
+  val closedMsg = "closed"
 
   def checkoutActorWithResponseOnStateChange(system: ActorSystem) =
     system.actorOf(Props(new Checkout {

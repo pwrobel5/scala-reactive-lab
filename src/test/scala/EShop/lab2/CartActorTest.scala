@@ -1,7 +1,7 @@
 package EShop.lab2
 
-import EShop.lab2.CartActor.{AddItem, ConfirmCheckoutCancelled, ConfirmCheckoutClosed, RemoveItem, StartCheckout}
-import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
+import EShop.lab2.CartActor._
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -10,9 +10,9 @@ import scala.concurrent.duration._
 
 class CartActorTest
   extends TestKit(ActorSystem("CheckoutTest"))
-  with AnyFlatSpecLike
-  with ImplicitSender
-  with BeforeAndAfterAll {
+    with AnyFlatSpecLike
+    with ImplicitSender
+    with BeforeAndAfterAll {
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
@@ -23,9 +23,9 @@ class CartActorTest
     val nonEmptyTestMsg = "changedStateToNonEmpty"
 
     val cart = system.actorOf(Props(new CartActor {
-      override def nonEmpty(cart: Cart, timer: Cancellable): Receive = {
+      override def nonEmpty(cart: Cart): Receive = {
         sender ! nonEmptyTestMsg
-        super.nonEmpty(cart, timer)
+        super.nonEmpty(cart)
       }
     }))
 
@@ -135,23 +135,24 @@ class CartActorTest
 }
 
 object CartActorTest {
-  val emptyMsg      = "empty"
-  val nonEmptyMsg   = "nonEmpty"
+  val emptyMsg = "empty"
+  val nonEmptyMsg = "nonEmpty"
   val inCheckoutMsg = "inCheckout"
 
-  def cartActorWithCartSizeResponseOnStateChange(system: ActorSystem): ActorRef =
+  def cartActorWithCartSizeResponseOnStateChange(
+                                                  system: ActorSystem): ActorRef =
     system.actorOf(Props(new CartActor {
       override val cartTimerDuration: FiniteDuration = 1.seconds
 
-      override def empty() = {
+      override def empty: Receive = {
         val result = super.empty
         sender ! emptyMsg
         sender ! 0
         result
       }
 
-      override def nonEmpty(cart: Cart, timer: Cancellable): Receive = {
-        val result = super.nonEmpty(cart, timer)
+      override def nonEmpty(cart: Cart): Receive = {
+        val result = super.nonEmpty(cart)
         sender ! nonEmptyMsg
         sender ! cart.size
         result
