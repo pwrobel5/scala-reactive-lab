@@ -87,9 +87,11 @@ class Checkout extends Timers {
     case SelectDeliveryMethod(_) =>
       restartCheckoutTimer()
       context become selectingPaymentMethod
+
     case CancelCheckout =>
       stopCheckoutTimer()
       context become cancelled
+
     case ExpireCheckout =>
       context become cancelled
   }
@@ -99,9 +101,11 @@ class Checkout extends Timers {
       stopCheckoutTimer()
       startPaymentTimer()
       context become processingPayment
+
     case CancelCheckout =>
       stopCheckoutTimer()
       context become cancelled
+
     case ExpireCheckout =>
       context become cancelled
   }
@@ -110,9 +114,11 @@ class Checkout extends Timers {
     case ConfirmPaymentReceived =>
       stopPaymentTimer()
       context become closed
+
     case CancelCheckout =>
       stopPaymentTimer()
       context become cancelled
+
     case ExpirePayment =>
       context become cancelled
   }

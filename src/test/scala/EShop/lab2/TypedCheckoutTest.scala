@@ -1,19 +1,15 @@
 package EShop.lab2
 
-import akka.actor.testkit.typed.scaladsl.{
-  ActorTestKit,
-  ScalaTestWithActorTestKit
-}
-import akka.actor.typed.{ActorRef, Behavior}
-import akka.actor.Cancellable
+import akka.actor.testkit.typed.scaladsl.{ActorTestKit, ScalaTestWithActorTestKit}
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.flatspec.AnyFlatSpecLike
+import akka.actor.typed.{ActorRef, Behavior}
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpecLike
 
 import scala.concurrent.duration.{FiniteDuration, _}
 
 class TypedCheckoutTest
-    extends ScalaTestWithActorTestKit
+  extends ScalaTestWithActorTestKit
     with AnyFlatSpecLike
     with BeforeAndAfterAll {
 
@@ -22,8 +18,8 @@ class TypedCheckoutTest
 
   override def afterAll: Unit = testKit.shutdownTestKit()
 
-  import TypedCheckoutTest._
   import TypedCheckout._
+  import TypedCheckoutTest._
 
   it should "be in selectingDelivery state after checkout start" in {
     val probe = testKit.createTestProbe[String]
@@ -215,11 +211,11 @@ object TypedCheckoutTest {
   val closedMsg = "closed"
 
   def checkoutActorWithResponseOnStateChange(
-      testkit: ActorTestKit,
-      probe: ActorRef[String]
-  ): ActorRef[TypedCheckout.Command] =
+                                              testkit: ActorTestKit,
+                                              probe: ActorRef[String]
+                                            ): ActorRef[TypedCheckout.Command] =
     testkit.spawn {
-      val checkout = new TypedCheckout {
+      val checkout: TypedCheckout = new TypedCheckout {
 
         override def start: Behavior[TypedCheckout.Command] =
           Behaviors.setup(_ => {
@@ -227,26 +223,23 @@ object TypedCheckoutTest {
             super.start
           })
 
-        override def selectingDelivery(
-            timer: Cancellable): Behavior[TypedCheckout.Command] =
+        override def selectingDelivery: Behavior[TypedCheckout.Command] =
           Behaviors.setup(_ => {
-            val result = super.selectingDelivery(timer)
+            val result = super.selectingDelivery
             probe ! selectingDeliveryMsg
             result
           })
 
-        override def selectingPaymentMethod(
-            timer: Cancellable): Behavior[TypedCheckout.Command] =
+        override def selectingPaymentMethod: Behavior[TypedCheckout.Command] =
           Behaviors.setup(_ => {
             probe ! selectingPaymentMethodMsg
-            super.selectingPaymentMethod(timer)
+            super.selectingPaymentMethod
           })
 
-        override def processingPayment(
-            timer: Cancellable): Behavior[TypedCheckout.Command] =
+        override def processingPayment: Behavior[TypedCheckout.Command] =
           Behaviors.setup(_ => {
             probe ! processingPaymentMsg
-            super.processingPayment(timer)
+            super.processingPayment
           })
 
         override def cancelled: Behavior[TypedCheckout.Command] =
