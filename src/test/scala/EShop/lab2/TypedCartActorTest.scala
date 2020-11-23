@@ -1,26 +1,22 @@
 package EShop.lab2
 
-import akka.actor.Cancellable
-import akka.actor.testkit.typed.scaladsl.{
-  ActorTestKit,
-  ScalaTestWithActorTestKit
-}
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.testkit.typed.scaladsl.{ActorTestKit, ScalaTestWithActorTestKit}
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.flatspec.AnyFlatSpecLike
+import akka.actor.typed.{ActorRef, Behavior}
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpecLike
 
 import scala.concurrent.duration._
 
 class TypedCartActorTest
-    extends ScalaTestWithActorTestKit
+  extends ScalaTestWithActorTestKit
     with AnyFlatSpecLike
     with BeforeAndAfterAll {
 
   override def afterAll: Unit = testKit.shutdownTestKit()
 
-  import TypedCartActorTest._
   import TypedCartActor._
+  import TypedCartActorTest._
 
   it should "change state after adding first item to the cart" in {
     val probe = testKit.createTestProbe[Any]()
@@ -198,9 +194,9 @@ object TypedCartActorTest {
   val inCheckoutMsg = "inCheckout"
 
   def cartActorWithCartSizeResponseOnStateChange(
-      testKit: ActorTestKit,
-      probe: ActorRef[Any]
-  ): ActorRef[TypedCartActor.Command] =
+                                                  testKit: ActorTestKit,
+                                                  probe: ActorRef[Any]
+                                                ): ActorRef[TypedCartActor.Command] =
     testKit.spawn {
       val cartActor = new TypedCartActor {
         override val cartTimerDuration: FiniteDuration = 1.seconds
@@ -213,12 +209,11 @@ object TypedCartActorTest {
           })
 
         override def nonEmpty(
-            cart: Cart,
-            timer: Cancellable): Behavior[TypedCartActor.Command] =
+                               cart: Cart): Behavior[TypedCartActor.Command] =
           Behaviors.setup(_ => {
             probe ! nonEmptyMsg
             probe ! cart.size
-            super.nonEmpty(cart, timer)
+            super.nonEmpty(cart)
           })
 
         override def inCheckout(cart: Cart): Behavior[TypedCartActor.Command] =
