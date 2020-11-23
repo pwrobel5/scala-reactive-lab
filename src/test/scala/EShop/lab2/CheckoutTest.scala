@@ -1,13 +1,7 @@
 package EShop.lab2
 
-import EShop.lab2.Checkout.{
-  CancelCheckout,
-  ConfirmPaymentReceived,
-  SelectDeliveryMethod,
-  SelectPayment,
-  StartCheckout
-}
-import akka.actor.{ActorSystem, Cancellable, Props}
+import EShop.lab2.Checkout._
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -15,7 +9,7 @@ import org.scalatest.flatspec.AnyFlatSpecLike
 import scala.concurrent.duration.{FiniteDuration, _}
 
 class CheckoutTest
-    extends TestKit(ActorSystem("CheckoutTest"))
+  extends TestKit(ActorSystem("CheckoutTest"))
     with AnyFlatSpecLike
     with ImplicitSender
     with BeforeAndAfterAll {
@@ -25,6 +19,7 @@ class CheckoutTest
 
   override def afterAll: Unit =
     TestKit.shutdownActorSystem(system)
+
   import CheckoutTest._
 
   it should "be in selectingDelivery state after checkout start" in {
@@ -174,29 +169,29 @@ object CheckoutTest {
   val cancelledMsg = "cancelled"
   val closedMsg = "closed"
 
-  def checkoutActorWithResponseOnStateChange(system: ActorSystem) =
+  def checkoutActorWithResponseOnStateChange(system: ActorSystem): ActorRef =
     system.actorOf(Props(new Checkout {
 
-      override def receive() = {
+      override def receive: Receive = {
         val result = super.receive
         sender ! emptyMsg
         result
       }
 
-      override def selectingDelivery(timer: Cancellable): Receive = {
-        val result = super.selectingDelivery(timer)
+      override def selectingDelivery: Receive = {
+        val result = super.selectingDelivery
         sender ! selectingDeliveryMsg
         result
       }
 
-      override def selectingPaymentMethod(timer: Cancellable): Receive = {
-        val result = super.selectingPaymentMethod(timer)
+      override def selectingPaymentMethod: Receive = {
+        val result = super.selectingPaymentMethod
         sender ! selectingPaymentMethodMsg
         result
       }
 
-      override def processingPayment(timer: Cancellable): Receive = {
-        val result = super.processingPayment(timer)
+      override def processingPayment: Receive = {
+        val result = super.processingPayment
         sender ! processingPaymentMsg
         result
       }
