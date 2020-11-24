@@ -29,13 +29,15 @@ object TypedCartActor {
 
   case object CartTimerKey
 
+  def apply(): Behavior[Command] =
+    Behaviors.setup(_ => new TypedCartActor().start)
 }
 
 class TypedCartActor() {
 
   import TypedCartActor._
 
-  val cartTimerDuration: FiniteDuration = 5 seconds
+  val cartTimerDuration: FiniteDuration = 10 seconds
 
   def start: Behavior[TypedCartActor.Command] = empty
 
@@ -74,6 +76,7 @@ class TypedCartActor() {
         inCheckout(cart)
 
       case ExpireCart =>
+        println("[TypedCartActor] Cart expired")
         stopTimer()
         empty
     }

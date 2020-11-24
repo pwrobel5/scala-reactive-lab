@@ -37,7 +37,7 @@ class CartActor extends Timers {
   import CartActor._
 
   private val log = Logging(context.system, this)
-  val cartTimerDuration: FiniteDuration = 5 seconds
+  val cartTimerDuration: FiniteDuration = 10 seconds
 
   def restartTimer(): Unit = {
     timers.cancel(CartTimerKey)
@@ -70,6 +70,7 @@ class CartActor extends Timers {
       context become inCheckout(cart)
 
     case ExpireCart =>
+      println("[CartActor] Cart expired")
       timers.cancel(CartTimerKey)
       context become empty
   }

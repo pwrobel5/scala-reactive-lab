@@ -43,14 +43,17 @@ object TypedCheckout {
 
   case object PaymentTimerKey
 
+  def apply(): Behavior[Command] =
+    Behaviors.setup(_ => new TypedCheckout().start)
+
 }
 
 class TypedCheckout {
 
   import TypedCheckout._
 
-  val checkoutTimerDuration: FiniteDuration = 1 seconds
-  val paymentTimerDuration: FiniteDuration = 1 seconds
+  val checkoutTimerDuration: FiniteDuration = 10 seconds
+  val paymentTimerDuration: FiniteDuration = 10 seconds
 
   def start: Behavior[TypedCheckout.Command] = Behaviors.withTimers[TypedCheckout.Command] { timers =>
     Behaviors.receiveMessage[TypedCheckout.Command] {
@@ -107,8 +110,14 @@ class TypedCheckout {
     }
   }
 
-  def cancelled: Behavior[TypedCheckout.Command] = Behaviors.receiveMessage[TypedCheckout.Command](_ => Behaviors.stopped)
+  def cancelled: Behavior[TypedCheckout.Command] = Behaviors.receiveMessage[TypedCheckout.Command](_ => {
+    println("[TypedCheckoutActor] Checkout cancelled")
+    Behaviors.stopped
+  })
 
-  def closed: Behavior[TypedCheckout.Command] = Behaviors.receiveMessage[TypedCheckout.Command](_ => Behaviors.stopped)
+  def closed: Behavior[TypedCheckout.Command] = Behaviors.receiveMessage[TypedCheckout.Command](_ => {
+    println("[TypedCheckoutActor] Checkout closed")
+    Behaviors.stopped
+  })
 
 }

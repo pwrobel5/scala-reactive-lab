@@ -52,8 +52,8 @@ class Checkout extends Timers {
   private val scheduler = context.system.scheduler
   private val log = Logging(context.system, this)
 
-  val checkoutTimerDuration: FiniteDuration = 1 seconds
-  val paymentTimerDuration: FiniteDuration = 1 seconds
+  val checkoutTimerDuration: FiniteDuration = 10 seconds
+  val paymentTimerDuration: FiniteDuration = 10 seconds
 
   def startCheckoutTimer(): Unit =
     timers.startSingleTimer(CheckoutTimerKey, ExpireCheckout, checkoutTimerDuration)
@@ -124,11 +124,13 @@ class Checkout extends Timers {
   }
 
   def cancelled: Receive = {
-    case _ => context.stop(self)
+    case _ =>
+      context.stop(self)
   }
 
   def closed: Receive = {
-    case _ => context.stop(self)
+    case _ =>
+      context.stop(self)
   }
 
 }
