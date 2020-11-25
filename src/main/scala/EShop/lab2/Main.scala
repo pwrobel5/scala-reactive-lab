@@ -1,15 +1,19 @@
 package EShop.lab2
 
+import EShop.lab3.OrderManager
 import akka.actor.{ActorSystem, Props}
+import akka.pattern.ask
+import akka.util.Timeout
 
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.io.StdIn.{readInt, readLine}
 
 object Main {
   def runClassicSystem(): Unit = {
     val actorSystem = ActorSystem("EShopClassic")
-    val cartActor = actorSystem.actorOf(Props[CartActor], "classicCart")
+    val orderManager = actorSystem.actorOf(Props[OrderManager], "orderManager")
+    implicit val askTimeout: Timeout = Timeout(10 seconds)
 
     var endWorking = false
 
@@ -26,7 +30,7 @@ object Main {
           println("Incorrect command")
         else {
           val item = splitted(1)
-          cartActor ! CartActor.AddItem(item)
+          orderManager ! OrderManager.AddItem(item)
         }
       }
 
@@ -37,48 +41,28 @@ object Main {
           println("Incorrect command")
         else {
           val item = splitted(1)
-          cartActor ! CartActor.RemoveItem(item)
+          orderManager ! OrderManager.RemoveItem(item)
         }
       }
 
       else if (clientInput.startsWith("Checkout")) {
-        cartActor ! CartActor.StartCheckout
-        val checkoutActor = actorSystem.actorOf(Props[Checkout], "classicCheckout")
-        checkoutActor ! Checkout.StartCheckout
+        orderManager ! OrderManager.Buy
 
-        print("Enter delivery method (or cancel): ")
+        print("Enter delivery method: ")
         val deliveryMethod = readLine().trim()
+        print("Select payment method: ")
+        val paymentMethod = readLine().trim()
 
-        if (deliveryMethod.startsWith("cancel")) {
-          checkoutActor ! Checkout.CancelCheckout
-          cartActor ! CartActor.ConfirmCheckoutCancelled
-        }
+        orderManager ! OrderManager.SelectDeliveryAndPaymentMethod(deliveryMethod, paymentMethod)
+        print("Do you wish to pay? [y/n]: ")
+        val decision = readLine().trim()
 
-        else {
-          checkoutActor ! Checkout.SelectDeliveryMethod(deliveryMethod)
-          print("Select payment method (or cancel): ")
-          val paymentMethod = readLine().trim()
-
-          if (paymentMethod.startsWith("cancel")) {
-            checkoutActor ! Checkout.CancelCheckout
-            cartActor ! CartActor.ConfirmCheckoutCancelled
-          }
-
-          else {
-            checkoutActor ! Checkout.SelectPayment(paymentMethod)
-            print("Do you wish to pay? [y/n]: ")
-            val decision = readLine().trim()
-
-            if (decision.startsWith("y")) {
-              checkoutActor ! Checkout.ConfirmPaymentReceived
-              cartActor ! CartActor.ConfirmCheckoutClosed
-            }
-
-            else {
-              checkoutActor ! Checkout.CancelCheckout
-              cartActor ! CartActor.ConfirmCheckoutCancelled
-            }
-          }
+        if (decision.startsWith("y")) {
+          orderManager ! OrderManager.Pay
+          val response = orderManager ? OrderManager.Pay
+          val result = Await.result(response, askTimeout.duration)
+          val resultString = result.asInstanceOf[String]
+          println(resultString)
         }
       }
 

@@ -1,5 +1,6 @@
 package EShop.lab2
 
+import EShop.lab3.OrderManager
 import akka.actor.{ActorRef, Props, Timers}
 import akka.event.Logging
 
@@ -21,6 +22,8 @@ object CartActor {
   case object ConfirmCheckoutCancelled extends Command
 
   case object ConfirmCheckoutClosed extends Command
+
+  case object GetItems extends Command
 
   sealed trait Event
 
@@ -50,6 +53,9 @@ class CartActor extends Timers {
     case AddItem(item) =>
       restartTimer()
       context become nonEmpty(Cart.empty.addItem(item))
+
+    case GetItems =>
+      sender() ! Cart.empty
   }
 
   def nonEmpty(cart: Cart): Receive = {
@@ -67,12 +73,17 @@ class CartActor extends Timers {
 
     case StartCheckout =>
       timers.cancel(CartTimerKey)
+      val checkoutActor = context.actorOf(Checkout.props(self), "checkoutActor")
+      sender() ! OrderManager.ConfirmCheckoutStarted(checkoutActor)
       context become inCheckout(cart)
 
     case ExpireCart =>
       println("[CartActor] Cart expired")
       timers.cancel(CartTimerKey)
       context become empty
+
+    case GetItems =>
+      sender() ! cart
   }
 
   def inCheckout(cart: Cart): Receive = {
@@ -82,5 +93,8 @@ class CartActor extends Timers {
     case ConfirmCheckoutCancelled =>
       restartTimer()
       context become nonEmpty(cart)
+
+    case GetItems =>
+      sender() ! cart
   }
 }

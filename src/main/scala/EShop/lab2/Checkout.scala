@@ -1,6 +1,7 @@
 package EShop.lab2
 
 import EShop.lab2.Checkout._
+import EShop.lab3.{OrderManager, Payment}
 import akka.actor.{ActorRef, Cancellable, Props, Timers}
 import akka.event.Logging
 
@@ -39,7 +40,7 @@ object Checkout {
 
   case class PaymentStarted(payment: ActorRef) extends Event
 
-  def props(cart: ActorRef): Props = Props(new Checkout())
+  def props(cart: ActorRef): Props = Props(new Checkout(cart))
 
   case object CheckoutTimerKey
 
@@ -47,7 +48,7 @@ object Checkout {
 
 }
 
-class Checkout extends Timers {
+class Checkout(cart: ActorRef) extends Timers {
 
   private val scheduler = context.system.scheduler
   private val log = Logging(context.system, this)
@@ -90,36 +91,45 @@ class Checkout extends Timers {
 
     case CancelCheckout =>
       stopCheckoutTimer()
+      cart ! CartActor.ConfirmCheckoutCancelled
       context become cancelled
 
     case ExpireCheckout =>
+      cart ! CartActor.ConfirmCheckoutCancelled
       context become cancelled
   }
 
   def selectingPaymentMethod: Receive = {
-    case SelectPayment(_) =>
+    case SelectPayment(paymentMethod) =>
       stopCheckoutTimer()
       startPaymentTimer()
+      val paymentActor = context.actorOf(Payment.props(paymentMethod, sender, self), "paymentActor")
+      sender() ! OrderManager.ConfirmPaymentStarted(paymentActor)
       context become processingPayment
 
     case CancelCheckout =>
       stopCheckoutTimer()
+      cart ! CartActor.ConfirmCheckoutCancelled
       context become cancelled
 
     case ExpireCheckout =>
+      cart ! CartActor.ConfirmCheckoutCancelled
       context become cancelled
   }
 
   def processingPayment: Receive = {
     case ConfirmPaymentReceived =>
       stopPaymentTimer()
+      cart ! CartActor.ConfirmCheckoutClosed
       context become closed
 
     case CancelCheckout =>
       stopPaymentTimer()
+      cart ! CartActor.ConfirmCheckoutCancelled
       context become cancelled
 
     case ExpirePayment =>
+      cart ! CartActor.ConfirmCheckoutCancelled
       context become cancelled
   }
 

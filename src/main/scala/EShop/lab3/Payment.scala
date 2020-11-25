@@ -1,22 +1,31 @@
 package EShop.lab3
 
+import EShop.lab2.Checkout
 import akka.actor.{Actor, ActorRef, Props}
 
 object Payment {
 
   sealed trait Command
+
   case object DoPayment extends Command
 
-  def props(method: String, orderManager: ActorRef, checkout: ActorRef) =
+  def props(method: String, orderManager: ActorRef, checkout: ActorRef): Props =
     Props(new Payment(method, orderManager, checkout))
 }
 
 class Payment(
-  method: String,
-  orderManager: ActorRef,
-  checkout: ActorRef
-) extends Actor {
+               method: String,
+               orderManager: ActorRef,
+               checkout: ActorRef
+             ) extends Actor {
 
-  override def receive: Receive = ???
+  import Payment._
+
+  override def receive: Receive = {
+    case DoPayment =>
+      sender() ! OrderManager.ConfirmPaymentReceived
+      checkout ! Checkout.ConfirmPaymentReceived
+      context.stop(self)
+  }
 
 }
