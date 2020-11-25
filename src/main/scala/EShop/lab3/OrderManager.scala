@@ -45,21 +45,27 @@ class OrderManager extends Actor {
     case AddItem(item) =>
       val cartActor = context.actorOf(Props[CartActor], "cartActor")
       cartActor ! CartActor.AddItem(item)
+      sender ! Done
       context become open(cartActor)
   }
 
   def open(cartActor: ActorRef): Receive = {
     case AddItem(item) =>
       cartActor ! CartActor.AddItem(item)
+      sender ! Done
 
     case RemoveItem(item) =>
       cartActor ! CartActor.RemoveItem(item)
+      sender ! Done
 
     case Buy =>
-      val response = cartActor ? CartActor.StartCheckout
-      val result = Await.result(response, askTimeout.duration)
-      val checkoutActor = result.asInstanceOf[ConfirmCheckoutStarted].checkoutRef
+      cartActor ! CartActor.StartCheckout
+      context become inCheckout(cartActor, sender)
+  }
 
+  def inCheckout(cartActorRef: ActorRef, senderRef: ActorRef): Receive = {
+    case ConfirmCheckoutStarted(checkoutActor) =>
+      senderRef ! Done
       checkoutActor ! Checkout.StartCheckout
       context become inCheckout(checkoutActor)
   }
@@ -67,18 +73,22 @@ class OrderManager extends Actor {
   def inCheckout(checkoutActorRef: ActorRef): Receive = {
     case SelectDeliveryAndPaymentMethod(delivery, payment) =>
       checkoutActorRef ! Checkout.SelectDeliveryMethod(delivery)
+      checkoutActorRef ! Checkout.SelectPayment(payment)
 
-      val response = checkoutActorRef ? Checkout.SelectPayment(payment)
-      val result = Await.result(response, askTimeout.duration)
-      val paymentActor = result.asInstanceOf[ConfirmPaymentStarted].paymentRef
-
-      context become inPayment(paymentActor)
+      context become inPayment(sender)
   }
 
-  def inPayment(paymentActorRef: ActorRef): Receive = {
+  def inPayment(senderRef: ActorRef): Receive = {
+    case ConfirmPaymentStarted(paymentActor) =>
+      senderRef ! Done
+      context become inPayment(paymentActor, senderRef)
+  }
+
+  def inPayment(paymentActorRef: ActorRef, senderRef: ActorRef): Receive = {
     case Pay =>
       val response = paymentActorRef ? Payment.DoPayment
       Await.result(response, askTimeout.duration)
+      sender ! Done
       context become finished
   }
 
