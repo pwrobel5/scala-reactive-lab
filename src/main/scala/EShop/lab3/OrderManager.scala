@@ -1,9 +1,11 @@
 package EShop.lab3
 
-import EShop.lab2.{CartActor, Checkout}
-import akka.actor.{Actor, ActorRef, Props}
+import EShop.lab2.{TypedCartActor, TypedCheckout}
+import akka.actor.typed
+import akka.actor.typed.scaladsl.adapter._
 import akka.pattern.ask
 import akka.util.Timeout
+import akka.{actor => classic}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -22,9 +24,9 @@ object OrderManager {
 
   case object Pay extends Command
 
-  case class ConfirmCheckoutStarted(checkoutRef: ActorRef) extends Command
+  case class ConfirmCheckoutStarted(checkoutRef: typed.ActorRef[TypedCheckout.Command]) extends Command
 
-  case class ConfirmPaymentStarted(paymentRef: ActorRef) extends Command
+  case class ConfirmPaymentStarted(paymentRef: classic.ActorRef) extends Command
 
   case object ConfirmPaymentReceived extends Command
 
@@ -33,7 +35,7 @@ object OrderManager {
   case object Done extends Ack //trivial ACK
 }
 
-class OrderManager extends Actor {
+class OrderManager extends classic.Actor {
 
   import OrderManager._
 
@@ -43,42 +45,51 @@ class OrderManager extends Actor {
 
   def uninitialized: Receive = {
     case AddItem(item) =>
-      val cartActor = context.actorOf(Props[CartActor], "cartActor")
-      cartActor ! CartActor.AddItem(item)
+      val cartActor = context.spawn(TypedCartActor(), "typedCartActor")
+      cartActor ! TypedCartActor.AddItem(item)
+      sender ! Done
       context become open(cartActor)
   }
 
-  def open(cartActor: ActorRef): Receive = {
+  def open(cartActor: typed.ActorRef[TypedCartActor.Command]): Receive = {
     case AddItem(item) =>
-      cartActor ! CartActor.AddItem(item)
+      cartActor ! TypedCartActor.AddItem(item)
+      sender ! Done
 
     case RemoveItem(item) =>
-      cartActor ! CartActor.RemoveItem(item)
+      cartActor ! TypedCartActor.RemoveItem(item)
+      sender ! Done
 
     case Buy =>
-      val response = cartActor ? CartActor.StartCheckout
-      val result = Await.result(response, askTimeout.duration)
-      val checkoutActor = result.asInstanceOf[ConfirmCheckoutStarted].checkoutRef
-
-      checkoutActor ! Checkout.StartCheckout
-      context become inCheckout(checkoutActor)
+      cartActor ! TypedCartActor.StartCheckout(context.self)
+      context become inCheckout(cartActor, sender)
   }
 
-  def inCheckout(checkoutActorRef: ActorRef): Receive = {
+  def inCheckout(cartActorRef: typed.ActorRef[TypedCartActor.Command], senderRef: classic.ActorRef): Receive = {
+    case ConfirmCheckoutStarted(checkoutRef) =>
+      checkoutRef ! TypedCheckout.StartCheckout
+      senderRef ! Done
+      context become inCheckout(checkoutRef)
+  }
+
+  def inCheckout(checkoutActorRef: typed.ActorRef[TypedCheckout.Command]): Receive = {
     case SelectDeliveryAndPaymentMethod(delivery, payment) =>
-      checkoutActorRef ! Checkout.SelectDeliveryMethod(delivery)
-
-      val response = checkoutActorRef ? Checkout.SelectPayment(payment)
-      val result = Await.result(response, askTimeout.duration)
-      val paymentActor = result.asInstanceOf[ConfirmPaymentStarted].paymentRef
-
-      context become inPayment(paymentActor)
+      checkoutActorRef ! TypedCheckout.SelectDeliveryMethod(delivery)
+      checkoutActorRef ! TypedCheckout.SelectPayment(payment, context.self)
+      context become inPayment(sender)
   }
 
-  def inPayment(paymentActorRef: ActorRef): Receive = {
+  def inPayment(senderRef: classic.ActorRef): Receive = {
+    case ConfirmPaymentStarted(paymentActorRef) =>
+      senderRef ! Done
+      context become inPayment(paymentActorRef, senderRef)
+  }
+
+  def inPayment(paymentActorRef: classic.ActorRef, senderRef: classic.ActorRef): Receive = {
     case Pay =>
       val response = paymentActorRef ? Payment.DoPayment
       Await.result(response, askTimeout.duration)
+      sender ! Done
       context become finished
   }
 

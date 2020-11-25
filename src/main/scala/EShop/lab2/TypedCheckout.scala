@@ -1,8 +1,11 @@
 package EShop.lab2
 
+import EShop.lab3.{OrderManager, Payment}
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ActorRef, Behavior}
+import akka.{actor => classic}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -27,7 +30,7 @@ object TypedCheckout {
 
   case object ExpireCheckout extends Command
 
-  case class SelectPayment(payment: String) extends Command
+  case class SelectPayment(payment: String, orderManagerActor: classic.ActorRef) extends Command
 
   case object ExpirePayment extends Command
 
@@ -43,12 +46,12 @@ object TypedCheckout {
 
   case object PaymentTimerKey
 
-  def apply(): Behavior[Command] =
-    Behaviors.setup(_ => new TypedCheckout().start)
+  def apply(cartActor: ActorRef[TypedCartActor.Command]): Behavior[Command] =
+    Behaviors.setup(_ => new TypedCheckout(cartActor).start)
 
 }
 
-class TypedCheckout {
+class TypedCheckout(cartActor: ActorRef[TypedCartActor.Command]) {
 
   import TypedCheckout._
 
@@ -72,26 +75,34 @@ class TypedCheckout {
 
       case CancelCheckout =>
         timers.cancel(CheckoutTimerKey)
+        cartActor ! TypedCartActor.ConfirmCheckoutCancelled
         cancelled
 
       case ExpireCheckout =>
+        cartActor ! TypedCartActor.ConfirmCheckoutCancelled
         cancelled
     }
   }
 
   def selectingPaymentMethod: Behavior[TypedCheckout.Command] = Behaviors.withTimers[TypedCheckout.Command] { timers =>
-    Behaviors.receiveMessage[TypedCheckout.Command] {
-      case SelectPayment(_) =>
-        timers.cancel(CheckoutTimerKey)
-        timers.startSingleTimer(PaymentTimerKey, ExpirePayment, paymentTimerDuration)
-        processingPayment
+    Behaviors.setup[TypedCheckout.Command] { context =>
+      Behaviors.receiveMessage[TypedCheckout.Command] {
+        case SelectPayment(payment, orderManagerActor) =>
+          timers.cancel(CheckoutTimerKey)
+          val paymentActor = context.actorOf(Payment.props(payment, orderManagerActor, context.self), "paymentActor")
+          orderManagerActor ! OrderManager.ConfirmPaymentStarted(paymentActor)
+          timers.startSingleTimer(PaymentTimerKey, ExpirePayment, paymentTimerDuration)
+          processingPayment
 
-      case CancelCheckout =>
-        timers.cancel(CheckoutTimerKey)
-        cancelled
+        case CancelCheckout =>
+          timers.cancel(CheckoutTimerKey)
+          cartActor ! TypedCartActor.ConfirmCheckoutCancelled
+          cancelled
 
-      case ExpireCheckout =>
-        cancelled
+        case ExpireCheckout =>
+          cartActor ! TypedCartActor.ConfirmCheckoutCancelled
+          cancelled
+      }
     }
   }
 
@@ -99,13 +110,16 @@ class TypedCheckout {
     Behaviors.receiveMessage[TypedCheckout.Command] {
       case ConfirmPaymentReceived =>
         timers.cancel(PaymentTimerKey)
+        cartActor ! TypedCartActor.ConfirmCheckoutClosed
         closed
 
       case CancelCheckout =>
         timers.cancel(PaymentTimerKey)
+        cartActor ! TypedCartActor.ConfirmCheckoutCancelled
         cancelled
 
       case ExpirePayment =>
+        cartActor ! TypedCartActor.ConfirmCheckoutCancelled
         cancelled
     }
   }

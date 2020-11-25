@@ -1,9 +1,9 @@
 package EShop.lab2
 
 import EShop.lab3.OrderManager
-import akka.actor.{ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
+import akka.{actor => classic}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -11,8 +11,8 @@ import scala.io.StdIn.{readInt, readLine}
 
 object Main {
   def runClassicSystem(): Unit = {
-    val actorSystem = ActorSystem("EShopClassic")
-    val orderManager = actorSystem.actorOf(Props[OrderManager], "orderManager")
+    val actorSystem = classic.ActorSystem("EShopClassic")
+    val orderManager = actorSystem.actorOf(classic.Props[OrderManager], "orderManager")
     implicit val askTimeout: Timeout = Timeout(10 seconds)
 
     var endWorking = false
@@ -79,24 +79,13 @@ object Main {
     Await.result(actorSystem.whenTerminated, Duration.Inf)
   }
 
-  def runTypedSystem(): Unit = {
-    val actorSystem = akka.actor.typed.ActorSystem(TypedActorsMain(), "EShopTyped")
-
-    actorSystem ! TypedActorsMain.Init
-
-    Await.result(actorSystem.whenTerminated, Duration.Inf)
-  }
-
   def main(args: Array[String]): Unit = {
-    println("Choose actor type:\n\t1 - classic actors\n\t2 - typed actors")
+    println("Choose actor type:\n\t1 - classic actors\n")
     val actorChoose = readInt()
 
     if (actorChoose == 1) {
       println("Classic chosen")
       runClassicSystem()
-    } else if (actorChoose == 2) {
-      println("Typed chosen")
-      runTypedSystem()
     } else
       println("Unrecognized type")
   }
