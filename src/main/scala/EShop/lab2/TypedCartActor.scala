@@ -80,6 +80,10 @@ class TypedCartActor() {
           stopTimer()
           empty
 
+        case RemoveItem(item) if !cart.contains(item) =>
+          restartTimer()
+          Behaviors.same
+
         case StartCheckout(orderManagerRef) =>
           stopTimer()
           val checkoutActor = context.spawn(TypedCheckout(context.self), "checkout")
