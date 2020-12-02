@@ -8,6 +8,7 @@ import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.io.StdIn.{readInt, readLine}
+import scala.language.postfixOps
 
 object Main {
   def runClassicSystem(): Unit = {

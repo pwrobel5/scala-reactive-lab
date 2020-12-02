@@ -9,6 +9,7 @@ import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.language.postfixOps
 
 class CheckoutTest
   extends TestKit(ActorSystem("CheckoutTest"))

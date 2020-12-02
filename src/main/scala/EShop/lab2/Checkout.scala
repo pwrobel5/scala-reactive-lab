@@ -40,6 +40,12 @@ object Checkout {
 
   case class PaymentStarted(payment: ActorRef) extends Event
 
+  case object CheckoutStarted extends Event
+
+  case object CheckoutCancelled extends Event
+
+  case class DeliveryMethodSelected(method: String) extends Event
+
   def props(cart: ActorRef): Props = Props(new Checkout(cart))
 
   case object CheckoutTimerKey
