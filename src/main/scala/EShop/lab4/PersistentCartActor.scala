@@ -15,7 +15,7 @@ object PersistentCartActor {
 
 class PersistentCartActor(
                            val persistenceId: String
-                         ) extends PersistentActor with Timers {
+                         ) extends Timers with PersistentActor {
 
   import EShop.lab2.CartActor._
 
