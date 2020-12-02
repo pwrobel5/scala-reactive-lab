@@ -8,10 +8,12 @@ import akka.persistence.PersistentActor
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.Random
 
 object PersistentCheckout {
+  def generatePersistenceId: String = Random.alphanumeric.take(256).mkString
 
-  def props(cartActor: ActorRef, persistenceId: String): Props =
+  def props(cartActor: ActorRef, persistenceId: String = generatePersistenceId): Props =
     Props(new PersistentCheckout(cartActor, persistenceId))
 }
 

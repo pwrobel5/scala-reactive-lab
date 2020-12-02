@@ -1,16 +1,18 @@
 package EShop.lab4
 
-import EShop.lab2.Cart
+import EShop.lab2.{Cart, Checkout}
 import EShop.lab3.OrderManager
 import akka.actor.{Props, TimerScheduler, Timers}
 import akka.event.Logging
 import akka.persistence.PersistentActor
 
 import scala.concurrent.duration._
+import scala.util.Random
 
 object PersistentCartActor {
+  def generatePersistenceId: String = Random.alphanumeric.take(256).mkString
 
-  def props(persistenceId: String): Props = Props(new PersistentCartActor(persistenceId))
+  def props(persistenceId: String = generatePersistenceId): Props = Props(new PersistentCartActor(persistenceId))
 }
 
 class PersistentCartActor(
@@ -92,10 +94,10 @@ class PersistentCartActor(
       }
 
     case StartCheckout =>
-      val checkoutActor = context.actorOf(PersistentCheckout.props(self, persistenceId + "_checkout"), "checkoutActor")
+      val checkoutActor = context.actorOf(Checkout.props(self), "checkoutActor")
+      sender() ! OrderManager.ConfirmCheckoutStarted(checkoutActor)
       persist(CheckoutStarted(checkoutActor, cart)) {
         event =>
-          sender() ! OrderManager.ConfirmCheckoutStarted(checkoutActor)
           updateState(event, Option(timer))
       }
 

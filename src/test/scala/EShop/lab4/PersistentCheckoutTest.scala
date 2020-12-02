@@ -2,7 +2,7 @@ package EShop.lab4
 
 import EShop.lab2.Checkout._
 import EShop.lab3.OrderManager
-import akka.actor.{ActorRef, ActorSystem, Props, TimerScheduler}
+import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props, TimerScheduler}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -40,6 +40,7 @@ class PersistentCheckoutTest
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
     //restart actor
+    checkoutActor ! PoisonPill
     val checkoutActorAfterRestart: ActorRef = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
     checkoutActorAfterRestart ! CancelCheckout
     expectMsg(cancelledMsg)
@@ -69,6 +70,7 @@ class PersistentCheckoutTest
     checkoutActor ! StartCheckout
     expectMsg(selectingDeliveryMsg)
     //restart actor
+    checkoutActor ! PoisonPill
     val checkoutActorAfterRestart: ActorRef = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
     checkoutActorAfterRestart ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
@@ -84,6 +86,7 @@ class PersistentCheckoutTest
     checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
     //restart actor
+    checkoutActor ! PoisonPill
     val checkoutActorAfterRestart: ActorRef = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
     checkoutActorAfterRestart ! CancelCheckout
     expectMsg(cancelledMsg)
@@ -116,6 +119,7 @@ class PersistentCheckoutTest
     checkoutActor ! SelectDeliveryMethod(deliveryMethod)
     expectMsg(selectingPaymentMethodMsg)
     //restart actor
+    checkoutActor ! PoisonPill
     val checkoutActorAfterRestart: ActorRef = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
     checkoutActorAfterRestart ! SelectPayment(paymentMethod)
     fishForMessage() {
@@ -139,6 +143,7 @@ class PersistentCheckoutTest
       case _: OrderManager.ConfirmPaymentStarted => false
     }
     //restart actor
+    checkoutActor ! PoisonPill
     val checkoutActorAfterRestart: ActorRef = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
     checkoutActorAfterRestart ! CancelCheckout
     expectMsg(cancelledMsg)
@@ -180,6 +185,7 @@ class PersistentCheckoutTest
       case _: OrderManager.ConfirmPaymentStarted => false
     }
     //restart actor
+    checkoutActor ! PoisonPill
     val checkoutActorAfterRestart: ActorRef = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
     checkoutActorAfterRestart ! ConfirmPaymentReceived
     expectMsg(closedMsg)
@@ -202,6 +208,7 @@ class PersistentCheckoutTest
     checkoutActor ! ConfirmPaymentReceived
     expectMsg(closedMsg)
     //restart actor
+    checkoutActor ! PoisonPill
     val checkoutActorAfterRestart: ActorRef = checkoutActorWithResponseOnStateChange(system)(cartActor, id)
     checkoutActorAfterRestart ! CancelCheckout
     expectNoMessage()

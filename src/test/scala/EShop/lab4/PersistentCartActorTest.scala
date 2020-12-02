@@ -3,7 +3,7 @@ package EShop.lab4
 import EShop.lab2.Cart
 import EShop.lab2.CartActor._
 import EShop.lab3.OrderManager
-import akka.actor.{ActorRef, ActorSystem, Props, TimerScheduler}
+import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props, TimerScheduler}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -55,6 +55,7 @@ class PersistentCartActorTest
     expectMsg(nonEmptyMsg)
     expectMsg(1)
     //restart actor
+    cart ! PoisonPill
     val cartActorAfterRestart: ActorRef = cartActorWithCartSizeResponseOnStateChange(system, id)
     cartActorAfterRestart ! RemoveItem("Storm")
     expectMsg(emptyMsg)
@@ -69,6 +70,7 @@ class PersistentCartActorTest
     expectMsg(nonEmptyMsg)
     expectMsg(1)
     //restart actor
+    cart ! PoisonPill
     val cartActorAfterRestart: ActorRef = cartActorWithCartSizeResponseOnStateChange(system, id)
     cartActorAfterRestart ! RemoveItem("Makbet")
     expectNoMessage()
@@ -82,6 +84,7 @@ class PersistentCartActorTest
     expectMsg(nonEmptyMsg)
     expectMsg(1)
     //restart actor
+    cart ! PoisonPill
     val cartActorAfterRestart: ActorRef = cartActorWithCartSizeResponseOnStateChange(system, id)
     cartActorAfterRestart ! StartCheckout
     fishForMessage() {
@@ -105,6 +108,7 @@ class PersistentCartActorTest
     }
     expectMsg(1)
     //restart actor
+    cart ! PoisonPill
     val cartActorAfterRestart: ActorRef = cartActorWithCartSizeResponseOnStateChange(system, id)
     cartActorAfterRestart ! ConfirmCheckoutCancelled
     expectMsg(nonEmptyMsg)
@@ -125,6 +129,7 @@ class PersistentCartActorTest
     }
     expectMsg(1)
     //restart actor
+    cart ! PoisonPill
     val cartActorAfterRestart: ActorRef = cartActorWithCartSizeResponseOnStateChange(system, id)
     cartActorAfterRestart ! ConfirmCheckoutClosed
     expectMsg(emptyMsg)
@@ -145,6 +150,7 @@ class PersistentCartActorTest
     }
     expectMsg(1)
     //restart actor
+    cart ! PoisonPill
     val cartActorAfterRestart: ActorRef = cartActorWithCartSizeResponseOnStateChange(system, id)
     cartActorAfterRestart ! AddItem("Henryk V")
     expectNoMessage
@@ -165,6 +171,7 @@ class PersistentCartActorTest
     expectMsg(nonEmptyMsg)
     expectMsg(1)
     //restart actor
+    cart ! PoisonPill
     val cartActorAfterRestart: ActorRef = cartActorWithCartSizeResponseOnStateChange(system, id)
     Thread.sleep(1500)
     cartActorAfterRestart ! AddItem("King Lear")

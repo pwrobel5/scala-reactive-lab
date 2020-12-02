@@ -1,8 +1,7 @@
 package EShop.lab3
 
 import EShop.lab2.{CartActor, Checkout}
-import EShop.lab4.PersistentCartActor
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 
@@ -45,7 +44,7 @@ class OrderManager extends Actor {
 
   def uninitialized: Receive = {
     case AddItem(item) =>
-      val cartActor = context.actorOf(PersistentCartActor.props("persistentCartActor"), "cartActor")
+      val cartActor = context.actorOf(CartActor.props, "cartActor")
       cartActor ! CartActor.AddItem(item)
       sender ! Done
       context become open(cartActor)
