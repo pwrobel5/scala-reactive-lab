@@ -1,8 +1,12 @@
 package EShop.lab5
 
+import java.net.http.HttpTimeoutException
+import java.net.{MalformedURLException, SocketException}
+
 import EShop.lab3.Payment.DoPayment
 import EShop.lab5.Payment.{PaymentConfirmed, PaymentRejected, PaymentRestarted}
-import EShop.lab5.PaymentService.PaymentSucceeded
+import EShop.lab5.PaymentService.{PaymentClientError, PaymentServerError, PaymentSucceeded}
+import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
 
 import scala.concurrent.duration._
@@ -38,7 +42,25 @@ class Payment(
 
   override val supervisorStrategy: OneForOneStrategy =
     OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 1.seconds) {
-      ???
+      case _: PaymentClientError =>
+        notifyAboutRejection()
+        Stop
+
+      case _: PaymentServerError =>
+        notifyAboutRestart()
+        Restart
+
+      case _: MalformedURLException =>
+        notifyAboutRejection()
+        Stop
+
+      case _: HttpTimeoutException =>
+        notifyAboutRestart()
+        Restart
+
+      case _: SocketException =>
+        notifyAboutRestart()
+        Restart
     }
 
   //please use this one to notify when supervised actor was stoped

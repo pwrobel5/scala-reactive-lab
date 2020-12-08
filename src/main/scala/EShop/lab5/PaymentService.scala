@@ -1,5 +1,8 @@
 package EShop.lab5
 
+import java.net.http.HttpTimeoutException
+import java.net.{MalformedURLException, SocketException}
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.http.javadsl.model.StatusCodes
 import akka.http.scaladsl.Http
@@ -42,19 +45,27 @@ class PaymentService(method: String, payment: ActorRef) extends Actor with Actor
       throw new PaymentClientError()
 
     case HttpResponse(StatusCodes.REQUEST_TIMEOUT, _, _, _) =>
-      throw new PaymentServerError()
+      throw new HttpTimeoutException("Server timeout")
 
     case HttpResponse(StatusCodes.INTERNAL_SERVER_ERROR, _, _, _) =>
       throw new PaymentServerError()
 
     case HttpResponse(StatusCodes.IM_A_TEAPOT, _, _, _) =>
       throw new PaymentServerError()
+
+    case HttpResponse(StatusCodes.METHOD_NOT_ALLOWED, _, _, _) =>
+      throw new MalformedURLException()
+
+    case HttpResponse(StatusCodes.BAD_GATEWAY, _, _, _) =>
+      throw new SocketException()
   }
 
   private def getURI: String = method match {
     case "payu" => "http://127.0.0.1:8080"
     case "paypal" => s"http://httpbin.org/status/408"
     case "visa" => s"http://httpbin.org/status/200"
+    case "invalid_link" => s"http://httpbin.org/status/405"
+    case "socket_exception" => s"http://httpbin.org/status/502"
     case _ => s"http://httpbin.org/status/404"
   }
 

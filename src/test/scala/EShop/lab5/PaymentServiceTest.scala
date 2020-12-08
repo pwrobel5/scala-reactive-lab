@@ -1,6 +1,8 @@
 package EShop.lab5
 
-import EShop.lab5.PaymentService.{PaymentClientError, PaymentServerError, PaymentSucceeded}
+import java.net.http.HttpTimeoutException
+
+import EShop.lab5.PaymentService.{PaymentClientError, PaymentSucceeded}
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{Actor, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
@@ -47,7 +49,7 @@ class PaymentServiceTest
 
       override def supervisorStrategy: SupervisorStrategy =
         OneForOneStrategy(maxNrOfRetries = 1, withinTimeRange = 1.seconds) {
-          case _: PaymentServerError =>
+          case _: HttpTimeoutException =>
             failure.ref ! "failed"
             Stop
         }

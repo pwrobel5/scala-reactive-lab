@@ -1,7 +1,7 @@
 package EShop.lab5
 
 import EShop.lab3.Payment.DoPayment
-import EShop.lab5.Payment.{PaymentConfirmed, PaymentRestarted}
+import EShop.lab5.Payment.{PaymentConfirmed, PaymentRejected, PaymentRestarted}
 import PaymentServiceServer.PaymentServiceServer
 import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
@@ -42,4 +42,30 @@ class PaymentTest
     server.system.terminate()
   }
 
+  it should "reject when malformed URL exception occurred" in {
+    val manager = TestProbe()
+    val checkout = TestProbe()
+    val payment = TestActorRef(new Payment("invalid_link", manager.ref, checkout.ref))
+
+    payment ! DoPayment
+    manager.expectMsg(PaymentRejected)
+  }
+
+  it should "restart when http timeout exception occurred" in {
+    val manager = TestProbe()
+    val checkout = TestProbe()
+    val payment = TestActorRef(Payment.props("paypal", manager.ref, checkout.ref))
+
+    payment ! DoPayment
+    manager.expectMsg(PaymentRestarted)
+  }
+
+  it should "restart when socket exception occurred" in {
+    val manager = TestProbe()
+    val checkout = TestProbe()
+    val payment = TestActorRef(Payment.props("socket_exception", manager.ref, checkout.ref))
+
+    payment ! DoPayment
+    manager.expectMsg(PaymentRestarted)
+  }
 }
