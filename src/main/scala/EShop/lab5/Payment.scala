@@ -1,7 +1,8 @@
 package EShop.lab5
 
 import EShop.lab3.Payment.DoPayment
-import EShop.lab5.Payment.{PaymentRejected, PaymentRestarted}
+import EShop.lab5.Payment.{PaymentConfirmed, PaymentRejected, PaymentRestarted}
+import EShop.lab5.PaymentService.PaymentSucceeded
 import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
 
 import scala.concurrent.duration._
@@ -14,7 +15,7 @@ object Payment {
 
   case object PaymentConfirmed
 
-  def props(method: String, orderManager: ActorRef, checkout: ActorRef) =
+  def props(method: String, orderManager: ActorRef, checkout: ActorRef): Props =
     Props(new Payment(method, orderManager, checkout))
 
 }
@@ -27,7 +28,12 @@ class Payment(
   with ActorLogging {
 
   override def receive: Receive = {
-    case DoPayment => // use payment service
+    case DoPayment =>
+      context.actorOf(PaymentService.props(method, self))
+
+    case PaymentSucceeded =>
+      orderManager ! PaymentConfirmed
+      checkout ! PaymentConfirmed
   }
 
   override val supervisorStrategy: OneForOneStrategy =
