@@ -1,22 +1,22 @@
 package PaymentServiceServer
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Terminated}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 class PaymentServiceServer extends PaymentRoutes {
 
-  implicit val system: ActorSystem                = ActorSystem("PaymentServiceSystem")
-  implicit val materializer: ActorMaterializer    = ActorMaterializer()
+  implicit val system: ActorSystem = ActorSystem("PaymentServiceSystem")
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
-  lazy val routes: Route                          = userRoutes
+  lazy val routes: Route = userRoutes
 
-  def run() = {
+  def run(): Terminated = {
     val serverBinding: Future[Http.ServerBinding] = Http().bindAndHandle(routes, "localhost", 8080)
 
     serverBinding.onComplete {
