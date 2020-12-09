@@ -9,7 +9,13 @@ import akka.http.scaladsl.server.{HttpApp, Route}
 import akka.pattern.ask
 import akka.routing.RoundRobinPool
 import akka.util.Timeout
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.{
+  DefaultJsonProtocol,
+  JsString,
+  JsValue,
+  JsonFormat,
+  RootJsonFormat
+}
 
 import scala.concurrent.duration._
 
@@ -30,12 +36,13 @@ class HttpWorker extends Actor with ActorLogging {
 }
 
 trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
-  implicit val workerWork     = jsonFormat1(HttpWorker.Work)
+  implicit val workerWork = jsonFormat1(HttpWorker.Work)
   implicit val workerResponse = jsonFormat1(HttpWorker.Response)
 
   //custom formatter just for example
   implicit val uriFormat = new JsonFormat[java.net.URI] {
-    override def write(obj: java.net.URI): spray.json.JsValue = JsString(obj.toString)
+    override def write(obj: java.net.URI): spray.json.JsValue =
+      JsString(obj.toString)
     override def read(json: JsValue): URI = json match {
       case JsString(url) => new URI(url)
       case _             => throw new RuntimeException("Parsing exception")
@@ -50,8 +57,9 @@ object WorkHttpApp extends App {
 
 class WorkHttpServer extends HttpApp with JsonSupport {
 
-  val system  = ActorSystem("ReactiveRouters")
-  val workers = system.actorOf(RoundRobinPool(5).props(Props[HttpWorker]), "workersRouter")
+  val system = ActorSystem("ReactiveRouters")
+  val workers =
+    system.actorOf(RoundRobinPool(5).props(Props[HttpWorker]), "workersRouter")
 
   implicit val timeout: Timeout = 5.seconds
 

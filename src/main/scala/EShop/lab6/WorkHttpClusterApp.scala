@@ -38,7 +38,9 @@ class WorkHttpServerInCluster() extends HttpApp with JsonSupport {
   val workers = system.actorOf(
     ClusterRouterPool(
       RoundRobinPool(0),
-      ClusterRouterPoolSettings(totalInstances = 100, maxInstancesPerNode = 3, allowLocalRoutees = false)
+      ClusterRouterPoolSettings(totalInstances = 100,
+                                maxInstancesPerNode = 3,
+                                allowLocalRoutees = false)
     ).props(Props[HttpWorker]),
     name = "clusterWorkerRouter"
   )

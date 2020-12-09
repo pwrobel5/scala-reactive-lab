@@ -1,11 +1,4 @@
-[
-  {
-    "work": "first work to do"
-  },
-  {
-    "work": "some other work to do"
-  },
-  {
-    "work": "yet another"
-  }
-]
+{
+  "brand": "gerber",
+  "productKeyWords": ["cream"]
+}
